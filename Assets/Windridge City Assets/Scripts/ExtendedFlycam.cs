@@ -32,28 +32,32 @@ public class ExtendedFlycam : MonoBehaviour
     private float rotationX = 0.0f;
     private float rotationY = 0.0f;
 
-    float rotatePerUpdate;
-    Vector3 initialAngle;
-    int angle;
-    float currentRotate = 0;
-    int angleBetweenFrame = 45;
-    int angleBetweenGroundTruth = 40;
     Camera camera;
-    bool shot = true;
     string picturesPath;
-    bool capturing = false;
-    float offset = 0;
+
+    Vector3 initialAngle;
+    const int angleBetweenFrame = 45;
+    float rotatePerUpdate;
+    float currentRotate;
+    int angle;
+    int offset;
+
+    bool capturing_ground_truth;
+    bool capturing_blur;
 
 
     void Start()
     {
-        Screen.lockCursor = true;
-        initialAngle = GameObject.FindGameObjectWithTag("MainCamera").GetComponent<Transform>().rotation.eulerAngles;
+        initialAngle = transform.rotation.eulerAngles;
         angle = angleBetweenFrame;
-        camera = GameObject.FindGameObjectWithTag("MainCamera").GetComponent<Camera>();
-        camera.stereoSeparation = 0.064f; // Eye separation (IPD) of 64mm.
+        camera = GetComponent<Camera>();
+        camera.stereoSeparation = 0.064f; // Eye separation (IPD)
         picturesPath = Application.dataPath + "/Pictures/";
         rotatePerUpdate = Time.fixedDeltaTime * 360;
+        currentRotate = 0;
+        offset = 0;
+        capturing_ground_truth = false;
+        capturing_blur = false;
     }
 
     void RenderCurrentImage(string filePath)
@@ -126,31 +130,6 @@ public class ExtendedFlycam : MonoBehaviour
             RenderCurrentImage(picturesPath + "render.jpg");
         }
 
-        //TODO: disable blur motion during acquisition and enable it back after
-        // Launch groound truth acquisition
-        if (Input.GetKey(KeyCode.G))
-        {
-            Debug.Log("Genertating ground truth");
-            GetComponent<PostProcessLayer>().SetMotion(false);
-            transform.eulerAngles = initialAngle;
-            capturing = true;
-        }
-        // One step of ground truth acquisistion
-        if (capturing)
-        {
-            if(offset < 360)
-            {
-                RenderCurrentImage(picturesPath + "ground truth/angle_" + offset.ToString() + ".jpg");
-                transform.eulerAngles = new Vector3(initialAngle.x, initialAngle.y + offset, initialAngle.z);
-                offset += angleBetweenGroundTruth;
-            }
-            else
-            { 
-                capturing = false;
-                GetComponent<PostProcessLayer>().SetMotion(true);
-            }
-        }
-        
         // render 320 images of current camera view
         if (Input.GetKey(KeyCode.R))
         {
@@ -175,25 +154,62 @@ public class ExtendedFlycam : MonoBehaviour
             RenderTextureToJPG(equirect, picturesPath + "panorama/Equirectangular.jpg");
         }
 
-        // stop the rotation
-        if (Input.GetKey(KeyCode.S)) { shot = false; }
-
-        // Apply rotation and take a shot if current angle is adapted
-        if (shot)
+        // Launch groound truth acquisition
+        if (Input.GetKey(KeyCode.G))
         {
-            //transform.localRotation *= Quaternion.AngleAxis(rotatePerUpdate * cameraSensitivity * Time.deltaTime, Vector3.up);
-            transform.Rotate(0, rotatePerUpdate, 0);
-            currentRotate += rotatePerUpdate;
+            Debug.Log("Genertating ground truth");
+            GetComponent<PostProcessLayer>().SetMotion(false);
+            transform.eulerAngles = initialAngle;
+            capturing_ground_truth = true;
+        }
+
+        // One step of ground truth acquisistion
+        if (capturing_ground_truth)
+        {
+            if (offset < 360)
+            {
+                RenderCurrentImage(picturesPath + "ground truth/angle_" + offset.ToString() + ".jpg");
+                transform.eulerAngles = new Vector3(initialAngle.x, initialAngle.y + offset, initialAngle.z);
+                offset += angleBetweenFrame;
+            }
+            else
+            {
+                capturing_ground_truth = false;
+                GetComponent<PostProcessLayer>().SetMotion(true);
+                offset = 0;
+            }
+        }
+
+        // Launch blurred images acquisition
+        if (Input.GetKey(KeyCode.S))
+        {
+            Debug.Log("Generating blurred images");
+            capturing_blur = true;
+            initialAngle = transform.rotation.eulerAngles;
+        }
+
+        // Apply rotation and take a capturing_blur if current angle is adapted
+        if (capturing_blur)
+        {
             if (angle <= 360)
             {
                 if (currentRotate > angle)
                 {
-                    Debug.Log("angle: " + angle.ToString());
-                    RenderCurrentImage(picturesPath + "blurred images/render_" + angle.ToString() + ".jpg");
+                    RenderCurrentImage(picturesPath + "blurred images/render_" + (angle - 45).ToString() + ".jpg");
                     angle += angleBetweenFrame;
                 }
+
+                // Apply rotation
+                transform.Rotate(0, rotatePerUpdate, 0);
+                currentRotate += rotatePerUpdate;
             }
-            else { shot = false; }
+            else
+            {
+                // Reset angle for new acquisition
+                angle = angleBetweenFrame;
+                capturing_blur = false;
+                currentRotate = 0;
+            }
         }
     }
 }
