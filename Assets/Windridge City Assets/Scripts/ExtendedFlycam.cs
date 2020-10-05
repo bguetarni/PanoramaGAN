@@ -58,6 +58,7 @@ public class ExtendedFlycam : MonoBehaviour
         offset = 0;
         capturing_ground_truth = false;
         capturing_blur = false;
+        initialAngle = transform.rotation.eulerAngles;
         initialPosition = transform.position;
     }
 
@@ -132,7 +133,7 @@ public class ExtendedFlycam : MonoBehaviour
         }
 
         // render 320 images of current camera view
-        if (Input.GetKey(KeyCode.R))
+        if (Input.GetKey(KeyCode.O))
         {
             RenderTexture cubemap = new RenderTexture(1024, 1024, 24, RenderTextureFormat.ARGB32);
             cubemap.dimension = TextureDimension.Cube;
@@ -156,13 +157,16 @@ public class ExtendedFlycam : MonoBehaviour
         }
 
         // Launch groound truth acquisition
-        if (Input.GetKey(KeyCode.G))
+        if (Input.GetKey(KeyCode.I))
         {
-            Debug.Log("Genertating ground truth");
-            GetComponent<PostProcessLayer>().SetMotion(false);
-            transform.eulerAngles = initialAngle;
-            transform.position = initialPosition;
-            capturing_ground_truth = true;
+            if(!capturing_ground_truth)
+            {
+                Debug.Log("Genertating ground truth");
+                GetComponent<PostProcessLayer>().SetMotion(false);
+                transform.eulerAngles = initialAngle;
+                transform.position = initialPosition;
+                capturing_ground_truth = true;
+            }
         }
 
         // One step of ground truth acquisistion
@@ -171,8 +175,8 @@ public class ExtendedFlycam : MonoBehaviour
             if (offset < 360)
             {
                 RenderCurrentImage(picturesPath + "ground truth/angle_" + offset.ToString() + ".jpg");
-                transform.eulerAngles = new Vector3(initialAngle.x, initialAngle.y + offset, initialAngle.z);
                 offset += angleBetweenFrame;
+                transform.eulerAngles = new Vector3(initialAngle.x, initialAngle.y + offset, initialAngle.z);
             }
             else
             {
@@ -183,12 +187,15 @@ public class ExtendedFlycam : MonoBehaviour
         }
 
         // Launch blurred images acquisition
-        if (Input.GetKey(KeyCode.S))
+        if (Input.GetKey(KeyCode.U))
         {
-            Debug.Log("Generating blurred images");
-            capturing_blur = true;
-            initialAngle = transform.rotation.eulerAngles;
-            initialPosition = transform.position;
+            if(!capturing_blur)
+            {
+                Debug.Log("Generating blurred images");
+                capturing_blur = true;
+                initialAngle = transform.rotation.eulerAngles;
+                initialPosition = transform.position;
+            }
         }
 
         // Apply rotation and take a capturing_blur if current angle is adapted
