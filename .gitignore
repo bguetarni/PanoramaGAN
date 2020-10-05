@@ -20,3 +20,6 @@
 !Assets/Pictures/ground\ truth/*.jpg
 !Assets/Pictures/panorama
 !Assets/Pictures/panorama/*.jpg
+
+!config.cfg
+!image-stitching
