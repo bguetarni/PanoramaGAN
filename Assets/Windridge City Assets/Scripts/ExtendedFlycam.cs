@@ -36,7 +36,8 @@ public class ExtendedFlycam : MonoBehaviour
     string picturesPath;
 
     Vector3 initialAngle;
-    const int angleBetweenFrame = 45;
+    Vector3 initialPosition;
+    const int angleBetweenFrame = 30;
     float rotatePerUpdate;
     float currentRotate;
     int angle;
@@ -48,7 +49,6 @@ public class ExtendedFlycam : MonoBehaviour
 
     void Start()
     {
-        initialAngle = transform.rotation.eulerAngles;
         angle = angleBetweenFrame;
         camera = GetComponent<Camera>();
         camera.stereoSeparation = 0.064f; // Eye separation (IPD)
@@ -58,6 +58,7 @@ public class ExtendedFlycam : MonoBehaviour
         offset = 0;
         capturing_ground_truth = false;
         capturing_blur = false;
+        initialPosition = transform.position;
     }
 
     void RenderCurrentImage(string filePath)
@@ -160,6 +161,7 @@ public class ExtendedFlycam : MonoBehaviour
             Debug.Log("Genertating ground truth");
             GetComponent<PostProcessLayer>().SetMotion(false);
             transform.eulerAngles = initialAngle;
+            transform.position = initialPosition;
             capturing_ground_truth = true;
         }
 
@@ -186,6 +188,7 @@ public class ExtendedFlycam : MonoBehaviour
             Debug.Log("Generating blurred images");
             capturing_blur = true;
             initialAngle = transform.rotation.eulerAngles;
+            initialPosition = transform.position;
         }
 
         // Apply rotation and take a capturing_blur if current angle is adapted
