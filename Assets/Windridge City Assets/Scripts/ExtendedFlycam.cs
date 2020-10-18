@@ -32,7 +32,6 @@ public class ExtendedFlycam : MonoBehaviour
     private float rotationX = 0.0f;
     private float rotationY = 0.0f;
 
-    Camera camera;
     string picturesPath;
 
     Vector3 initialAngle;
@@ -46,15 +45,13 @@ public class ExtendedFlycam : MonoBehaviour
 
     bool capturing_ground_truth;
     bool capturing_blur;
-    GameObject zones;
 
 
     void Start()
     {
         Screen.lockCursor = true;
         angle = angleBetweenFrame;
-        camera = GetComponent<Camera>();
-        camera.stereoSeparation = 0.064f; // Eye separation (IPD)
+        GetComponent<Camera>().stereoSeparation = 0.064f; // Eye separation (IPD)
         picturesPath = Application.dataPath + "/Pictures/";
         rotatePerUpdate = Time.fixedDeltaTime * 360;
         currentRotate = 0;
@@ -63,14 +60,13 @@ public class ExtendedFlycam : MonoBehaviour
         capturing_blur = false;
         initialAngle = transform.rotation.eulerAngles;
         initialPosition = transform.position;
-        zones = GameObject.FindGameObjectWithTag("Zones");
     }
 
     void RenderCurrentImage(string filePath)
     {
         // create picture from screen screenshot
-        Texture2D screenshot = ScreenCapture.CaptureScreenshotAsTexture();
-        byte[] bytes = screenshot.EncodeToJPG();
+        var screenshot = ScreenCapture.CaptureScreenshotAsTexture();
+        var bytes = screenshot.EncodeToJPG();
 
         // save picture
         System.IO.File.WriteAllBytes(filePath, bytes);
@@ -82,12 +78,12 @@ public class ExtendedFlycam : MonoBehaviour
 
     void RenderTextureToJPG(RenderTexture renderTexture, string file)
     {
-        RenderTexture currenRT = RenderTexture.active;
+        var currenRT = RenderTexture.active;
         RenderTexture.active = renderTexture;
-        Texture2D texture = new Texture2D(renderTexture.width, renderTexture.height);
+        var texture = new Texture2D(renderTexture.width, renderTexture.height);
         texture.ReadPixels(new Rect(0, 0, texture.width, texture.height), 0, 0);
         texture.Apply();
-        byte[] bytes = texture.EncodeToJPG();
+        var bytes = texture.EncodeToJPG();
         System.IO.File.WriteAllBytes(file, bytes);
         RenderTexture.active = currenRT;
     }
@@ -128,75 +124,45 @@ public class ExtendedFlycam : MonoBehaviour
             cubemap.dimension = TextureDimension.Cube;
             RenderTexture equirect = new RenderTexture(4096, 2048, 24, RenderTextureFormat.ARGB32);
 
-            camera.RenderToCubemap(cubemap, 63, Camera.MonoOrStereoscopicEye.Mono);
+            RenderToCubemap(cubemap, 63, Camera.MonoOrStereoscopicEye.Mono);
             cubemap.ConvertToEquirect(equirect, Camera.MonoOrStereoscopicEye.Mono);
             RenderTextureToJPG(equirect, picturesPath + "panorama/EquirectangularMono.jpg");
 
-            camera.RenderToCubemap(cubemap, 63, Camera.MonoOrStereoscopicEye.Left);
+            RenderToCubemap(cubemap, 63, Camera.MonoOrStereoscopicEye.Left);
             cubemap.ConvertToEquirect(equirect, Camera.MonoOrStereoscopicEye.Left);
             RenderTextureToJPG(equirect, picturesPath + "panorama/EquirectangularLeft.jpg");
 
-            camera.RenderToCubemap(cubemap, 63, Camera.MonoOrStereoscopicEye.Right);
+            RenderToCubemap(cubemap, 63, Camera.MonoOrStereoscopicEye.Right);
             cubemap.ConvertToEquirect(equirect, Camera.MonoOrStereoscopicEye.Right);
             RenderTextureToJPG(equirect, picturesPath + "panorama/EquirectangularRight.jpg");
 
-            camera.RenderToCubemap(cubemap);
+            RenderToCubemap(cubemap);
             cubemap.ConvertToEquirect(equirect);
             RenderTextureToJPG(equirect, picturesPath + "panorama/Equirectangular.jpg");
         }
 */
         if (Input.GetKey(KeyCode.V))
         {
-            int cubeID = Random.Range(0, zones.transform.childCount-1);
-            GameObject cube = zones.transform.GetChild(cubeID).gameObject;
-            float xPostion = cube.transform.position.x;
-            float yPostion = cube.transform.position.y;
-            float zPostion = cube.transform.position.z;
-            float xScale = cube.transform.localScale.x;
-            float yScale = cube.transform.localScale.y;
-            float zScale = cube.transform.localScale.z;
-            float xDim = cube.GetComponent<Renderer>().bounds.size.x;
-            float yDim = cube.GetComponent<Renderer>().bounds.size.y;
-            float zDim = cube.GetComponent<Renderer>().bounds.size.z;
-            
-            // float x = xPostion + Random.Range(-xScale/2, xScale/2);
-            // float y = yPostion + Random.Range(-yScale/2, yScale/2);
-            // float z = zPostion + Random.Range(-zScale/2, zScale/2);
-            float x = xPostion + Random.Range(-xDim/2, xDim/2);
-            float y = yPostion + Random.Range(-yDim/2, yDim/2);
-            float z = zPostion + Random.Range(-zDim/2, zDim/2);
-            camera.transform.position = new Vector3(x, y, z);
-            camera.transform.eulerAngles = new Vector3(0, Random.Range(0, 360), 0);
+            var zones = GameObject.FindGameObjectWithTag("Zones");
+            for(int i=0; i < zones.transform.childCount; i++)
+            {
+                var cube = zones.transform.GetChild(i).gameObject;
+                cube.GetComponent<Renderer>().enabled = false;
+            }
+            StartCoroutine("MoveCamera");
         }
-
-        if(Input.GetKey(KeyCode.N))
+        
+        if (Input.GetKey(KeyCode.B))
         {
-            GameObject cube = zones.transform.GetChild(0).gameObject;
-            cube.GetComponent<Renderer>().enabled = !cube.GetComponent<Renderer>().enabled;
+            StopCoroutine("MoveCamera");
+            var zones = GameObject.FindGameObjectWithTag("Zones");
+            for(int i=0; i < zones.transform.childCount; i++)
+            {
+                var cube = zones.transform.GetChild(i).gameObject;
+                cube.GetComponent<Renderer>().enabled = true;
+            }
         }
-        if(Input.GetKey(KeyCode.R))
-        {
-            GameObject somecube = GameObject.FindGameObjectWithTag("SomeCube");
-            GameObject cube = zones.transform.GetChild(0).gameObject;
-            float xPostion = cube.transform.position.x;
-            float yPostion = cube.transform.position.y;
-            float zPostion = cube.transform.position.z;
-            float xScale = cube.transform.localScale.x;
-            float yScale = cube.transform.localScale.y;
-            float zScale = cube.transform.localScale.z;
-            float xDim = cube.GetComponent<Renderer>().bounds.size.x;
-            float yDim = cube.GetComponent<Renderer>().bounds.size.y;
-            float zDim = cube.GetComponent<Renderer>().bounds.size.z;
-            
-            float x = xPostion + Random.Range(-xScale/2, xScale/2);
-            float y = yPostion + Random.Range(-yScale/2, yScale/2);
-            float z = zPostion + Random.Range(-zScale/2, zScale/2);
-            // float x = xPostion + Random.Range(-xDim/2, xDim/2);
-            // float y = yPostion + Random.Range(-yDim/2, yDim/2);
-            // float z = zPostion + Random.Range(-zDim/2, zDim/2);
-            somecube.transform.position = new Vector3(x, y, z);
-        }
-
+        
         // Launch groound truth acquisition
         if (Input.GetKey(KeyCode.I))
         {
@@ -262,5 +228,40 @@ public class ExtendedFlycam : MonoBehaviour
                 currentRotate = 0;
             }
         }
+    }
+
+    IEnumerator MoveCamera() 
+    {
+        while(true)
+        { 
+            transform.position = GetNewPosition();
+            transform.eulerAngles = new Vector3(0, Random.Range(0, 360), 0);
+            yield return new WaitForSeconds(1f);
+        }
+    }
+
+    Vector3 GetNewPosition()
+    {
+        var zones = GameObject.FindGameObjectWithTag("Zones");
+        var cubeID = Random.Range(0, zones.transform.childCount-1);
+        var cube = zones.transform.GetChild(cubeID).gameObject;
+        var xPostion = cube.transform.position.x;
+        var yPostion = cube.transform.position.y;
+        var zPostion = cube.transform.position.z;
+        
+        var xScale = cube.transform.localScale.x;
+        var yScale = cube.transform.localScale.y;
+        var zScale = cube.transform.localScale.z;
+        var x = xPostion + Random.Range(-xScale*0.5f, xScale*0.5f);
+        var y = yPostion + Random.Range(-yScale*0.5f, yScale*0.5f);
+        var z = zPostion + Random.Range(-zScale*0.5f, zScale*0.5f);
+    /*
+        Debug.Log("Cube " + cubeID.ToString());
+        Debug.Log("X: " + xScale.ToString() + " / " + xDim.ToString());
+        Debug.Log("Y: " + yScale.ToString() + " / " + yDim.ToString());
+        Debug.Log("Z: " + zScale.ToString() + " / " + zDim.ToString());
+    */
+
+        return new Vector3(x, y, z);
     }
 }
