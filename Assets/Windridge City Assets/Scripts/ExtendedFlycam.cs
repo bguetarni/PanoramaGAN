@@ -38,6 +38,7 @@ public class ExtendedFlycam : MonoBehaviour
     Vector3 initialAngle;
     Vector3 initialPosition;
     const int angleBetweenFrame = 30;
+    const int panoramaAngle = 360;
     float rotatePerUpdate;
     float currentRotate;
     int angle;
@@ -45,10 +46,12 @@ public class ExtendedFlycam : MonoBehaviour
 
     bool capturing_ground_truth;
     bool capturing_blur;
+    GameObject zones;
 
 
     void Start()
     {
+        Screen.lockCursor = true;
         angle = angleBetweenFrame;
         camera = GetComponent<Camera>();
         camera.stereoSeparation = 0.064f; // Eye separation (IPD)
@@ -60,6 +63,7 @@ public class ExtendedFlycam : MonoBehaviour
         capturing_blur = false;
         initialAngle = transform.rotation.eulerAngles;
         initialPosition = transform.position;
+        zones = GameObject.FindGameObjectWithTag("Zones");
     }
 
     void RenderCurrentImage(string filePath)
@@ -90,15 +94,6 @@ public class ExtendedFlycam : MonoBehaviour
 
     void Update()
     {
-
-
-        //rotationX += Input.GetAxis("Mouse X") * cameraSensitivity * Time.deltaTime;
-        //rotationY += Input.GetAxis("Mouse Y") * cameraSensitivity * Time.deltaTime;
-        //rotationY = Mathf.Clamp(rotationY, -90, 90);
-
-        //transform.localRotation = Quaternion.AngleAxis(rotationX, Vector3.up);
-        //transform.localRotation *= Quaternion.AngleAxis(rotationY, Vector3.left);
-
         if (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift))
         {
             transform.position += transform.forward * (normalMoveSpeed * fastMoveFactor) * Input.GetAxis("Vertical") * Time.deltaTime;
@@ -125,13 +120,7 @@ public class ExtendedFlycam : MonoBehaviour
             else
                 Cursor.lockState = CursorLockMode.None;
         }
-
-        // Render the camera view
-        if (Input.GetKey(KeyCode.P))
-        {
-            RenderCurrentImage(picturesPath + "render.jpg");
-        }
-
+/*
         // render 320 images of current camera view
         if (Input.GetKey(KeyCode.O))
         {
@@ -155,6 +144,58 @@ public class ExtendedFlycam : MonoBehaviour
             cubemap.ConvertToEquirect(equirect);
             RenderTextureToJPG(equirect, picturesPath + "panorama/Equirectangular.jpg");
         }
+*/
+        if (Input.GetKey(KeyCode.V))
+        {
+            int cubeID = Random.Range(0, zones.transform.childCount-1);
+            GameObject cube = zones.transform.GetChild(cubeID).gameObject;
+            float xPostion = cube.transform.position.x;
+            float yPostion = cube.transform.position.y;
+            float zPostion = cube.transform.position.z;
+            float xScale = cube.transform.localScale.x;
+            float yScale = cube.transform.localScale.y;
+            float zScale = cube.transform.localScale.z;
+            float xDim = cube.GetComponent<Renderer>().bounds.size.x;
+            float yDim = cube.GetComponent<Renderer>().bounds.size.y;
+            float zDim = cube.GetComponent<Renderer>().bounds.size.z;
+            
+            // float x = xPostion + Random.Range(-xScale/2, xScale/2);
+            // float y = yPostion + Random.Range(-yScale/2, yScale/2);
+            // float z = zPostion + Random.Range(-zScale/2, zScale/2);
+            float x = xPostion + Random.Range(-xDim/2, xDim/2);
+            float y = yPostion + Random.Range(-yDim/2, yDim/2);
+            float z = zPostion + Random.Range(-zDim/2, zDim/2);
+            camera.transform.position = new Vector3(x, y, z);
+            camera.transform.eulerAngles = new Vector3(0, Random.Range(0, 360), 0);
+        }
+
+        if(Input.GetKey(KeyCode.N))
+        {
+            GameObject cube = zones.transform.GetChild(0).gameObject;
+            cube.GetComponent<Renderer>().enabled = !cube.GetComponent<Renderer>().enabled;
+        }
+        if(Input.GetKey(KeyCode.R))
+        {
+            GameObject somecube = GameObject.FindGameObjectWithTag("SomeCube");
+            GameObject cube = zones.transform.GetChild(0).gameObject;
+            float xPostion = cube.transform.position.x;
+            float yPostion = cube.transform.position.y;
+            float zPostion = cube.transform.position.z;
+            float xScale = cube.transform.localScale.x;
+            float yScale = cube.transform.localScale.y;
+            float zScale = cube.transform.localScale.z;
+            float xDim = cube.GetComponent<Renderer>().bounds.size.x;
+            float yDim = cube.GetComponent<Renderer>().bounds.size.y;
+            float zDim = cube.GetComponent<Renderer>().bounds.size.z;
+            
+            float x = xPostion + Random.Range(-xScale/2, xScale/2);
+            float y = yPostion + Random.Range(-yScale/2, yScale/2);
+            float z = zPostion + Random.Range(-zScale/2, zScale/2);
+            // float x = xPostion + Random.Range(-xDim/2, xDim/2);
+            // float y = yPostion + Random.Range(-yDim/2, yDim/2);
+            // float z = zPostion + Random.Range(-zDim/2, zDim/2);
+            somecube.transform.position = new Vector3(x, y, z);
+        }
 
         // Launch groound truth acquisition
         if (Input.GetKey(KeyCode.I))
@@ -172,7 +213,7 @@ public class ExtendedFlycam : MonoBehaviour
         // One step of ground truth acquisistion
         if (capturing_ground_truth)
         {
-            if (offset < 360)
+            if (offset < panoramaAngle)
             {
                 RenderCurrentImage(picturesPath + "ground truth/angle_" + offset.ToString() + ".jpg");
                 offset += angleBetweenFrame;
@@ -201,7 +242,7 @@ public class ExtendedFlycam : MonoBehaviour
         // Apply rotation and take a capturing_blur if current angle is adapted
         if (capturing_blur)
         {
-            if (angle <= 360)
+            if (angle <= panoramaAngle)
             {
                 if (currentRotate > angle)
                 {
