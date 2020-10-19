@@ -143,10 +143,9 @@ public class ExtendedFlycam : MonoBehaviour
 */
         if (Input.GetKeyDown(KeyCode.V))
         {
-            var zones = GameObject.FindGameObjectWithTag("Zones");
-            for(int i=0; i < zones.transform.childCount; i++)
+            var cubesList = GameObject.FindGameObjectsWithTag("Zones");
+            foreach (var cube in cubesList)
             {
-                var cube = zones.transform.GetChild(i).gameObject;
                 cube.GetComponent<Renderer>().enabled = false;
             }
             Debug.Log("Start MoveCamera Coroutine");
@@ -157,12 +156,6 @@ public class ExtendedFlycam : MonoBehaviour
         {
             Debug.Log("Stop MoveCamera Coroutine");
             StopCoroutine("MoveCamera");
-            var zones = GameObject.FindGameObjectWithTag("Zones");
-            for(int i=0; i < zones.transform.childCount; i++)
-            {
-                var cube = zones.transform.GetChild(i).gameObject;
-                cube.GetComponent<Renderer>().enabled = true;
-            }
         }
         
         // Launch groound truth acquisition
@@ -244,26 +237,20 @@ public class ExtendedFlycam : MonoBehaviour
 
     Vector3 GetNewPosition()
     {
-        var zones = GameObject.FindGameObjectWithTag("Zones");
-        var cubeID = Random.Range(0, zones.transform.childCount-1);
-        var cube = zones.transform.GetChild(cubeID).gameObject;
+        var cubesList = GameObject.FindGameObjectsWithTag("Zones");
+        var cubeID = Random.Range(0, cubesList.Length-1);
+        var cube = cubesList[cubeID];
         var xPostion = cube.transform.position.x;
         var yPostion = cube.transform.position.y;
         var zPostion = cube.transform.position.z;
-        
         var xScale = cube.transform.localScale.x;
         var yScale = cube.transform.localScale.y;
         var zScale = cube.transform.localScale.z;
-        var x = xPostion + Random.Range(-xScale*0.5f, xScale*0.5f);
-        var y = yPostion + Random.Range(-yScale*0.5f, yScale*0.5f);
-        var z = zPostion + Random.Range(-zScale*0.5f, zScale*0.5f);
-    /*
-        Debug.Log("Cube " + cubeID.ToString());
-        Debug.Log("X: " + xScale.ToString() + " / " + xDim.ToString());
-        Debug.Log("Y: " + yScale.ToString() + " / " + yDim.ToString());
-        Debug.Log("Z: " + zScale.ToString() + " / " + zDim.ToString());
-    */
 
-        return new Vector3(x, y, z);
+        var p = new Vector3(xPostion, yPostion, zPostion);
+        p += cube.transform.right*Random.Range(-xScale*0.5f, xScale*0.5f);
+        p += cube.transform.up*Random.Range(-yScale*0.5f, yScale*0.5f);
+        p += cube.transform.forward*Random.Range(-zScale*0.5f, zScale*0.5f);
+        return p;
     }
 }
