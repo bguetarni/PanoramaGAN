@@ -118,7 +118,7 @@ public class ExtendedFlycam : MonoBehaviour
         }
 /*
         // render 320 images of current camera view
-        if (Input.GetKey(KeyCode.O))
+        if (Input.GetKeyDown(KeyCode.O))
         {
             RenderTexture cubemap = new RenderTexture(1024, 1024, 24, RenderTextureFormat.ARGB32);
             cubemap.dimension = TextureDimension.Cube;
@@ -141,7 +141,7 @@ public class ExtendedFlycam : MonoBehaviour
             RenderTextureToJPG(equirect, picturesPath + "panorama/Equirectangular.jpg");
         }
 */
-        if (Input.GetKey(KeyCode.V))
+        if (Input.GetKeyDown(KeyCode.V))
         {
             var zones = GameObject.FindGameObjectWithTag("Zones");
             for(int i=0; i < zones.transform.childCount; i++)
@@ -149,11 +149,13 @@ public class ExtendedFlycam : MonoBehaviour
                 var cube = zones.transform.GetChild(i).gameObject;
                 cube.GetComponent<Renderer>().enabled = false;
             }
+            Debug.Log("Start MoveCamera Coroutine");
             StartCoroutine("MoveCamera");
         }
         
-        if (Input.GetKey(KeyCode.B))
+        if (Input.GetKeyDown(KeyCode.B))
         {
+            Debug.Log("Stop MoveCamera Coroutine");
             StopCoroutine("MoveCamera");
             var zones = GameObject.FindGameObjectWithTag("Zones");
             for(int i=0; i < zones.transform.childCount; i++)
@@ -164,7 +166,7 @@ public class ExtendedFlycam : MonoBehaviour
         }
         
         // Launch groound truth acquisition
-        if (Input.GetKey(KeyCode.I))
+        if (Input.GetKeyDown(KeyCode.I))
         {
             if(!capturing_ground_truth)
             {
@@ -194,7 +196,7 @@ public class ExtendedFlycam : MonoBehaviour
         }
 
         // Launch blurred images acquisition
-        if (Input.GetKey(KeyCode.U))
+        if (Input.GetKeyDown(KeyCode.U))
         {
             if(!capturing_blur)
             {
