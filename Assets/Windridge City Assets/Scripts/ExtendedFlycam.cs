@@ -39,41 +39,28 @@ public class ExtendedFlycam : MonoBehaviour
     const int angleBetweenFrame = 30;
     const int panoramaAngle = 360;
     float rotatePerUpdate;
-    float currentRotate;
-    int angle;
     int offset;
-
-    bool capturing_ground_truth;
     bool capturing_blur;
+    bool is_corouting_running;
 
 
     void Start()
     {
         Screen.lockCursor = true;
-        angle = angleBetweenFrame;
         GetComponent<Camera>().stereoSeparation = 0.064f; // Eye separation (IPD)
-        picturesPath = Application.dataPath + "/Pictures/";
+        picturesPath = Application.dataPath + "/../Pictures/";
         rotatePerUpdate = Time.fixedDeltaTime * 360;
-        currentRotate = 0;
+        Debug.Log("Rotate per update: " + rotatePerUpdate.ToString() + "°");
         offset = 0;
-        capturing_ground_truth = false;
         capturing_blur = false;
         initialAngle = transform.rotation.eulerAngles;
         initialPosition = transform.position;
+        StartCoroutine("MoveCamera");
     }
 
     void RenderCurrentImage(string filePath)
     {
-        // create picture from screen screenshot
-        var screenshot = ScreenCapture.CaptureScreenshotAsTexture();
-        var bytes = screenshot.EncodeToJPG();
-
-        // save picture
-        System.IO.File.WriteAllBytes(filePath, bytes);
-        //Debug.Log(Application.dataPath + "/Pictures/" + "render.jpg");
-
-        // always destroy
-        Object.Destroy(screenshot);
+        ScreenCapture.CaptureScreenshot(filePath);
     }
 
     void RenderTextureToJPG(RenderTexture renderTexture, string file)
@@ -116,7 +103,7 @@ public class ExtendedFlycam : MonoBehaviour
             else
                 Cursor.lockState = CursorLockMode.None;
         }
-/*
+    /*
         // render 320 images of current camera view
         if (Input.GetKeyDown(KeyCode.O))
         {
@@ -140,93 +127,80 @@ public class ExtendedFlycam : MonoBehaviour
             cubemap.ConvertToEquirect(equirect);
             RenderTextureToJPG(equirect, picturesPath + "panorama/Equirectangular.jpg");
         }
-*/
+    */
         if (Input.GetKeyDown(KeyCode.V))
         {
-            var cubesList = GameObject.FindGameObjectsWithTag("Zones");
-            foreach (var cube in cubesList)
+            if(!is_corouting_running)
             {
-                cube.GetComponent<Renderer>().enabled = false;
+                Debug.Log("Start MoveCamera Coroutine");
+                StartCoroutine("MoveCamera");
             }
-            Debug.Log("Start MoveCamera Coroutine");
-            StartCoroutine("MoveCamera");
+            else
+            {
+                Debug.Log("MoveCamera coroutine is already running");
+            }
         }
         
         if (Input.GetKeyDown(KeyCode.B))
         {
             Debug.Log("Stop MoveCamera Coroutine");
             StopCoroutine("MoveCamera");
+            is_corouting_running = false;
         }
         
         // Launch groound truth acquisition
         if (Input.GetKeyDown(KeyCode.I))
         {
-            if(!capturing_ground_truth)
-            {
-                Debug.Log("Genertating ground truth");
-                GetComponent<PostProcessLayer>().SetMotion(false);
-                transform.eulerAngles = initialAngle;
-                transform.position = initialPosition;
-                capturing_ground_truth = true;
-            }
-        }
-
-        // One step of ground truth acquisistion
-        if (capturing_ground_truth)
-        {
-            if (offset < panoramaAngle)
-            {
-                RenderCurrentImage(picturesPath + "ground truth/angle_" + offset.ToString() + ".jpg");
-                offset += angleBetweenFrame;
-                transform.eulerAngles = new Vector3(initialAngle.x, initialAngle.y + offset, initialAngle.z);
-            }
-            else
-            {
-                capturing_ground_truth = false;
-                GetComponent<PostProcessLayer>().SetMotion(true);
-                offset = 0;
-            }
+            StartCoroutine("GenerateGroundTruth");
         }
 
         // Launch blurred images acquisition
         if (Input.GetKeyDown(KeyCode.U))
         {
-            if(!capturing_blur)
-            {
-                Debug.Log("Generating blurred images");
-                capturing_blur = true;
-                initialAngle = transform.rotation.eulerAngles;
-                initialPosition = transform.position;
-            }
+            StartCoroutine("GenerateBlurredImages");
         }
+    }
 
-        // Apply rotation and take a capturing_blur if current angle is adapted
-        if (capturing_blur)
+    IEnumerator GenerateBlurredImages() 
+    {
+        initialAngle = transform.rotation.eulerAngles;
+        initialPosition = transform.position;
+
+        var angle = 0;
+        for (float currentRotate = rotatePerUpdate; currentRotate <= 360.0f; currentRotate += rotatePerUpdate) 
         {
-            if (angle <= panoramaAngle)
+            transform.Rotate(0, rotatePerUpdate, 0);
+            if(currentRotate > angle*1.0f)
             {
-                if (currentRotate > angle)
-                {
-                    RenderCurrentImage(picturesPath + "blurred images/render_" + (angle - 45).ToString() + ".jpg");
-                    angle += angleBetweenFrame;
-                }
-
-                // Apply rotation
-                transform.Rotate(0, rotatePerUpdate, 0);
-                currentRotate += rotatePerUpdate;
+                RenderCurrentImage(picturesPath + "blurred images/render_" + angle.ToString() + ".png");
+                angle += angleBetweenFrame;
             }
-            else
-            {
-                // Reset angle for new acquisition
-                angle = angleBetweenFrame;
-                capturing_blur = false;
-                currentRotate = 0;
-            }
+            yield return null;
         }
+    }
+
+    IEnumerator GenerateGroundTruth() 
+    {
+        GetComponent<PostProcessLayer>().SetMotion(false);
+        transform.position = initialPosition;
+
+        for (int offset = angleBetweenFrame; offset <= 360; offset += angleBetweenFrame) 
+        {
+            transform.eulerAngles = new Vector3(initialAngle.x, initialAngle.y + offset, initialAngle.z);
+            RenderCurrentImage(picturesPath + "ground truth/angle_" + offset.ToString() + ".png");
+            yield return null;
+        }
+        
+        GetComponent<PostProcessLayer>().SetMotion(true);
     }
 
     IEnumerator MoveCamera() 
     {
+        is_corouting_running = true;
+        foreach (var cube in GameObject.FindGameObjectsWithTag("Zones"))
+        {
+            cube.GetComponent<Renderer>().enabled = false;
+        }
         while(true)
         { 
             transform.position = GetNewPosition();
