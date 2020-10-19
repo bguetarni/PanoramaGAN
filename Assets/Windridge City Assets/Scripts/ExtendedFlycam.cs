@@ -186,7 +186,7 @@ public class ExtendedFlycam : MonoBehaviour
         Debug.Log("Elapsed time for blurred images " + sw.Elapsed.ToString() + "s");
     }
 
-    IEnumerator GenerateGroundTruth() 
+    IEnumerator GenerateGroundTruth()
     {
         /*
             Command line for generating pano from directory of images :
