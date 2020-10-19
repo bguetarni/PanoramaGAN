@@ -1,7 +1,8 @@
 ﻿using UnityEngine;
 using UnityEngine.Rendering;
-using System.Collections;
 using UnityEngine.Rendering.PostProcessing;
+using System.Collections;
+using Diagnostics = System.Diagnostics;
 
 public class ExtendedFlycam : MonoBehaviour
 {
@@ -37,10 +38,7 @@ public class ExtendedFlycam : MonoBehaviour
     Vector3 initialAngle;
     Vector3 initialPosition;
     const int angleBetweenFrame = 30;
-    const int panoramaAngle = 360;
     float rotatePerUpdate;
-    int offset;
-    bool capturing_blur;
     bool is_corouting_running;
 
 
@@ -51,8 +49,6 @@ public class ExtendedFlycam : MonoBehaviour
         picturesPath = Application.dataPath + "/../Pictures/";
         rotatePerUpdate = Time.fixedDeltaTime * 360;
         Debug.Log("Rotate per update: " + rotatePerUpdate.ToString() + "°");
-        offset = 0;
-        capturing_blur = false;
         initialAngle = transform.rotation.eulerAngles;
         initialPosition = transform.position;
         StartCoroutine("MoveCamera");
@@ -103,7 +99,7 @@ public class ExtendedFlycam : MonoBehaviour
             else
                 Cursor.lockState = CursorLockMode.None;
         }
-    /*
+
         // render 320 images of current camera view
         if (Input.GetKeyDown(KeyCode.O))
         {
@@ -111,23 +107,24 @@ public class ExtendedFlycam : MonoBehaviour
             cubemap.dimension = TextureDimension.Cube;
             RenderTexture equirect = new RenderTexture(4096, 2048, 24, RenderTextureFormat.ARGB32);
 
-            RenderToCubemap(cubemap, 63, Camera.MonoOrStereoscopicEye.Mono);
+            GetComponent<Camera>().RenderToCubemap(cubemap, 63, Camera.MonoOrStereoscopicEye.Mono);
             cubemap.ConvertToEquirect(equirect, Camera.MonoOrStereoscopicEye.Mono);
             RenderTextureToJPG(equirect, picturesPath + "panorama/EquirectangularMono.jpg");
 
-            RenderToCubemap(cubemap, 63, Camera.MonoOrStereoscopicEye.Left);
+            GetComponent<Camera>().RenderToCubemap(cubemap, 63, Camera.MonoOrStereoscopicEye.Left);
             cubemap.ConvertToEquirect(equirect, Camera.MonoOrStereoscopicEye.Left);
             RenderTextureToJPG(equirect, picturesPath + "panorama/EquirectangularLeft.jpg");
 
-            RenderToCubemap(cubemap, 63, Camera.MonoOrStereoscopicEye.Right);
+            GetComponent<Camera>().RenderToCubemap(cubemap, 63, Camera.MonoOrStereoscopicEye.Right);
             cubemap.ConvertToEquirect(equirect, Camera.MonoOrStereoscopicEye.Right);
             RenderTextureToJPG(equirect, picturesPath + "panorama/EquirectangularRight.jpg");
 
-            RenderToCubemap(cubemap);
+            GetComponent<Camera>().RenderToCubemap(cubemap);
             cubemap.ConvertToEquirect(equirect);
             RenderTextureToJPG(equirect, picturesPath + "panorama/Equirectangular.jpg");
         }
-    */
+
+        // Start the movement of camera
         if (Input.GetKeyDown(KeyCode.V))
         {
             if(!is_corouting_running)
@@ -141,6 +138,7 @@ public class ExtendedFlycam : MonoBehaviour
             }
         }
         
+        // Stop the movement of camera
         if (Input.GetKeyDown(KeyCode.B))
         {
             Debug.Log("Stop MoveCamera Coroutine");
@@ -148,46 +146,66 @@ public class ExtendedFlycam : MonoBehaviour
             is_corouting_running = false;
         }
         
-        // Launch groound truth acquisition
-        if (Input.GetKeyDown(KeyCode.I))
-        {
-            StartCoroutine("GenerateGroundTruth");
-        }
-
         // Launch blurred images acquisition
         if (Input.GetKeyDown(KeyCode.U))
         {
             StartCoroutine("GenerateBlurredImages");
         }
+
+        // Launch groound truth acquisition
+        if (Input.GetKeyDown(KeyCode.I))
+        {
+            StartCoroutine("GenerateGroundTruth");
+        }
     }
 
     IEnumerator GenerateBlurredImages() 
     {
+        var sw = new Diagnostics.Stopwatch();
+        sw.Start();
         initialAngle = transform.rotation.eulerAngles;
         initialPosition = transform.position;
 
         var angle = 0;
-        for (float currentRotate = rotatePerUpdate; currentRotate <= 360.0f; currentRotate += rotatePerUpdate) 
+        var frameNumber = 1;
+        for (float currentRotate = 0f; currentRotate <= 360.0f; currentRotate += rotatePerUpdate) 
         {
             transform.Rotate(0, rotatePerUpdate, 0);
             if(currentRotate > angle*1.0f)
             {
-                RenderCurrentImage(picturesPath + "blurred images/render_" + angle.ToString() + ".png");
+                var pictureName = frameNumber.ToString("D2") + ".png";
+                Debug.Log("Saving blurred " + pictureName);
+                RenderCurrentImage(picturesPath + "blurred images/" + pictureName);
+                frameNumber++;
                 angle += angleBetweenFrame;
             }
             yield return null;
         }
+        sw.Stop();
+        Debug.Log("Elapsed time for blurred images " + sw.Elapsed.ToString() + "s");
     }
 
     IEnumerator GenerateGroundTruth() 
     {
+        /*
+            Command line for generating pano from directory of images :
+                'ls -d gt/* | xargs ./image-stitching'
+                    with:
+                        gt: directory containing the images
+                        image-stitching: algo executable
+                        xargs: UNIX command line to expand a list of arguments
+        */
         GetComponent<PostProcessLayer>().SetMotion(false);
         transform.position = initialPosition;
-
-        for (int offset = angleBetweenFrame; offset <= 360; offset += angleBetweenFrame) 
+        
+        var frameNumber = 1;
+        for (int offset = 0; offset <= 360; offset += angleBetweenFrame) 
         {
             transform.eulerAngles = new Vector3(initialAngle.x, initialAngle.y + offset, initialAngle.z);
-            RenderCurrentImage(picturesPath + "ground truth/angle_" + offset.ToString() + ".png");
+            var pictureName = frameNumber.ToString("D2") + ".png";
+            Debug.Log("Saving ground-truth " + pictureName);
+            RenderCurrentImage(picturesPath + "ground truth/" + pictureName);
+            frameNumber++;
             yield return null;
         }
         
