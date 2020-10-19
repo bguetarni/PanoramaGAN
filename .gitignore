@@ -1,25 +1,13 @@
-*
-!.gitignore
-
-!Assets
-!Assets/Windridge\ City\ Assets
-!Assets/Windridge\ City\ Assets/Scripts
-!Assets/Windridge\ City\ Assets/Scripts/ExtendedFlycam.cs
-
-!Library
-!Library/PackageCache
-!Library/PackageCache/com.unity.postprocessing@2.3.0
-!Library/PackageCache/com.unity.postprocessing@2.3.0/PostProcessing
-!Library/PackageCache/com.unity.postprocessing@2.3.0/PostProcessing/Runtime
-!Library/PackageCache/com.unity.postprocessing@2.3.0/PostProcessing/Runtime/PostProcessLayer.cs
-
-!Pictures
-!Pictures/blurred\ images
-!Pictures/blurred\ images/*.jpg
-!Pictures/ground\ truth
-!Pictures/ground\ truth/*.jpg
-!Pictures/panorama
-!Pictures/panorama/*.jpg
-
-!config.cfg
-!image-stitching
+.idea/*
+.vs/*
+.vscode/*
+Assets/*
+Library/*
+Logs/*
+obj/*
+Packages/*
+ProjectSettings/*
+Temp/*
+Assembly*
+*.sln
+*.user

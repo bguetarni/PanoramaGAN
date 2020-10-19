@@ -37,7 +37,7 @@ public class ExtendedFlycam : MonoBehaviour
 
     Vector3 initialAngle;
     Vector3 initialPosition;
-    const int angleBetweenFrame = 30;
+    const int angleBetweenFrame = 18;
     float rotatePerUpdate;
     bool is_corouting_running;
 
@@ -161,16 +161,16 @@ public class ExtendedFlycam : MonoBehaviour
 
     IEnumerator GenerateBlurredImages() 
     {
+        // save initial values for ground-truth
+        initialPosition = transform.position;
+        initialAngle = transform.eulerAngles;
+        
         var sw = new Diagnostics.Stopwatch();
         sw.Start();
-        initialAngle = transform.rotation.eulerAngles;
-        initialPosition = transform.position;
-
         var angle = 0;
         var frameNumber = 1;
-        for (float currentRotate = 0f; currentRotate <= 360.0f; currentRotate += rotatePerUpdate) 
+        for (float currentRotate = rotatePerUpdate; currentRotate <= 360.0f; currentRotate += rotatePerUpdate) 
         {
-            transform.Rotate(0, rotatePerUpdate, 0);
             if(currentRotate > angle*1.0f)
             {
                 var pictureName = frameNumber.ToString("D2") + ".png";
@@ -179,6 +179,7 @@ public class ExtendedFlycam : MonoBehaviour
                 frameNumber++;
                 angle += angleBetweenFrame;
             }
+            transform.Rotate(0, rotatePerUpdate, 0);
             yield return null;
         }
         sw.Stop();
@@ -189,23 +190,24 @@ public class ExtendedFlycam : MonoBehaviour
     {
         /*
             Command line for generating pano from directory of images :
-                'ls -d gt/* | xargs ./image-stitching'
+                'ls -d images/* | xargs ./image-stitching'
                     with:
-                        gt: directory containing the images
+                        images: directory containing the images
                         image-stitching: algo executable
                         xargs: UNIX command line to expand a list of arguments
         */
         GetComponent<PostProcessLayer>().SetMotion(false);
         transform.position = initialPosition;
+        transform.eulerAngles = initialAngle;
         
         var frameNumber = 1;
-        for (int offset = 0; offset <= 360; offset += angleBetweenFrame) 
+        for (int offset = angleBetweenFrame; offset <= 360; offset += angleBetweenFrame) 
         {
-            transform.eulerAngles = new Vector3(initialAngle.x, initialAngle.y + offset, initialAngle.z);
             var pictureName = frameNumber.ToString("D2") + ".png";
             Debug.Log("Saving ground-truth " + pictureName);
             RenderCurrentImage(picturesPath + "ground truth/" + pictureName);
             frameNumber++;
+            transform.eulerAngles = new Vector3(initialAngle.x, initialAngle.y + offset, initialAngle.z);
             yield return null;
         }
         
