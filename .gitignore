@@ -13,13 +13,13 @@
 !Library/PackageCache/com.unity.postprocessing@2.3.0/PostProcessing/Runtime
 !Library/PackageCache/com.unity.postprocessing@2.3.0/PostProcessing/Runtime/PostProcessLayer.cs
 
-!Assets/Pictures
-!Assets/Pictures/blurred\ images
-!Assets/Pictures/blurred\ images/*.jpg
-!Assets/Pictures/ground\ truth
-!Assets/Pictures/ground\ truth/*.jpg
-!Assets/Pictures/panorama
-!Assets/Pictures/panorama/*.jpg
+!Pictures
+!Pictures/blurred\ images
+!Pictures/blurred\ images/*.jpg
+!Pictures/ground\ truth
+!Pictures/ground\ truth/*.jpg
+!Pictures/panorama
+!Pictures/panorama/*.jpg
 
 !config.cfg
 !image-stitching
