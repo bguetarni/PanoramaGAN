@@ -29,11 +29,11 @@ namespace UnityEngine.Rendering.PostProcessing
         {
             if (_blur)
             {
-                Debug.Log("Enabling motion blur");
+                // Debug.Log("Enabling motion blur");
             }
             else
             {
-                Debug.Log("Disabling motion blur");
+                // Debug.Log("Disabling motion blur");
             }
             blur = _blur;
         }

@@ -2,6 +2,7 @@
 .vs/*
 .vscode/*
 Assets/*
+data/*
 Library/*
 Logs/*
 obj/*

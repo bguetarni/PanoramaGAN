@@ -3,6 +3,7 @@ using UnityEngine.Rendering;
 using UnityEngine.Rendering.PostProcessing;
 using System.Collections;
 using Diagnostics = System.Diagnostics;
+using System.IO;
 
 public class ExtendedFlycam : MonoBehaviour
 {
@@ -34,6 +35,7 @@ public class ExtendedFlycam : MonoBehaviour
     private float rotationY = 0.0f;
 
     string picturesPath;
+    string datasetPath;
 
     Vector3 initialAngle;
     Vector3 initialPosition;
@@ -47,11 +49,11 @@ public class ExtendedFlycam : MonoBehaviour
         Screen.lockCursor = true;
         GetComponent<Camera>().stereoSeparation = 0.064f; // Eye separation (IPD)
         picturesPath = Application.dataPath + "/../Pictures/";
+        datasetPath = Application.dataPath + "/../data/";
         rotatePerUpdate = Time.fixedDeltaTime * 360;
         Debug.Log("Rotate per update: " + rotatePerUpdate.ToString() + "°");
         initialAngle = transform.rotation.eulerAngles;
         initialPosition = transform.position;
-        StartCoroutine("MoveCamera");
     }
 
     void RenderCurrentImage(string filePath)
@@ -149,24 +151,30 @@ public class ExtendedFlycam : MonoBehaviour
         // Launch blurred images acquisition
         if (Input.GetKeyDown(KeyCode.U))
         {
-            StartCoroutine("GenerateBlurredImages");
+            StartCoroutine("GenerateBlurredImages", picturesPath);
         }
 
         // Launch groound truth acquisition
         if (Input.GetKeyDown(KeyCode.I))
         {
-            StartCoroutine("GenerateGroundTruth");
+            StartCoroutine("GenerateGroundTruth", picturesPath);
+        }
+
+        // Launch dataset generation
+        if (Input.GetKeyDown(KeyCode.D))
+        {
+            StartCoroutine("DatasetGenerate", 5);
         }
     }
 
-    IEnumerator GenerateBlurredImages() 
+    IEnumerator GenerateBlurredImages(string path)
     {
         // save initial values for ground-truth
         initialPosition = transform.position;
         initialAngle = transform.eulerAngles;
         
-        var sw = new Diagnostics.Stopwatch();
-        sw.Start();
+        // var sw = new Diagnostics.Stopwatch();
+        // sw.Start();
         var angle = 0;
         var frameNumber = 1;
         for (float currentRotate = rotatePerUpdate; currentRotate <= 360.0f; currentRotate += rotatePerUpdate) 
@@ -174,19 +182,19 @@ public class ExtendedFlycam : MonoBehaviour
             if(currentRotate > angle*1.0f)
             {
                 var pictureName = frameNumber.ToString("D2") + ".png";
-                Debug.Log("Saving blurred " + pictureName);
-                RenderCurrentImage(picturesPath + "blurred images/" + pictureName);
+                // Debug.Log("Saving blurred " + pictureName);
+                RenderCurrentImage(path + "blurred/" + pictureName);
                 frameNumber++;
                 angle += angleBetweenFrame;
             }
             transform.Rotate(0, rotatePerUpdate, 0);
             yield return null;
         }
-        sw.Stop();
-        Debug.Log("Elapsed time for blurred images " + sw.Elapsed.ToString() + "s");
+        // sw.Stop();
+        // Debug.Log("Elapsed time for blurred images " + sw.Elapsed.ToString() + "s");
     }
 
-    IEnumerator GenerateGroundTruth()
+    IEnumerator GenerateGroundTruth(string path)
     {
         /*
             Command line for generating pano from directory of images :
@@ -204,8 +212,8 @@ public class ExtendedFlycam : MonoBehaviour
         for (int offset = angleBetweenFrame; offset <= 360; offset += angleBetweenFrame) 
         {
             var pictureName = frameNumber.ToString("D2") + ".png";
-            Debug.Log("Saving ground-truth " + pictureName);
-            RenderCurrentImage(picturesPath + "ground truth/" + pictureName);
+            // Debug.Log("Saving ground-truth " + pictureName);
+            RenderCurrentImage(path + "ground_truth/" + pictureName);
             frameNumber++;
             transform.eulerAngles = new Vector3(initialAngle.x, initialAngle.y + offset, initialAngle.z);
             yield return null;
@@ -246,5 +254,36 @@ public class ExtendedFlycam : MonoBehaviour
         p += cube.transform.up*Random.Range(-yScale*0.5f, yScale*0.5f);
         p += cube.transform.forward*Random.Range(-zScale*0.5f, zScale*0.5f);
         return p;
+    }
+
+    IEnumerator DatasetGenerate(int nbSamples)
+    {
+        foreach (var cube in GameObject.FindGameObjectsWithTag("Zones"))
+        {
+            cube.GetComponent<Renderer>().enabled = false;
+        }
+        for(var i=0; i<nbSamples; i++)
+        {
+            // sample name in the form of: 00000XXX
+            var directoryName = (i+1).ToString("D" + nbSamples.ToString().Length.ToString()) + "/";
+            Debug.Log("sample n° " + directoryName);
+            
+            // create directory with the name of the sample if doesn't exist
+            if(!Directory.Exists(datasetPath + directoryName))
+            {
+                Directory.CreateDirectory(datasetPath + directoryName);
+                Directory.CreateDirectory(datasetPath + directoryName + "blurred/");
+                Directory.CreateDirectory(datasetPath + directoryName + "ground_truth/");
+            }
+
+            // new position and angle for camera
+            transform.position = GetNewPosition();
+            transform.eulerAngles = new Vector3(0, Random.Range(0, 360), 0);
+            yield return null;
+            
+            // render blurred, wait and render ground-truth
+            yield return StartCoroutine("GenerateBlurredImages", datasetPath + directoryName);
+            yield return StartCoroutine("GenerateGroundTruth", datasetPath + directoryName);
+        }
     }
 }
