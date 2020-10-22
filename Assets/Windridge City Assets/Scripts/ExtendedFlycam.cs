@@ -41,7 +41,7 @@ public class ExtendedFlycam : MonoBehaviour
     Vector3 initialPosition;
     const int angleBetweenFrame = 18;
     float rotatePerUpdate;
-    bool is_corouting_running;
+    bool is_camera_moving;
 
 
     void Start()
@@ -129,7 +129,7 @@ public class ExtendedFlycam : MonoBehaviour
         // Start the movement of camera
         if (Input.GetKeyDown(KeyCode.V))
         {
-            if(!is_corouting_running)
+            if(!is_camera_moving)
             {
                 Debug.Log("Start MoveCamera Coroutine");
                 StartCoroutine("MoveCamera");
@@ -145,7 +145,7 @@ public class ExtendedFlycam : MonoBehaviour
         {
             Debug.Log("Stop MoveCamera Coroutine");
             StopCoroutine("MoveCamera");
-            is_corouting_running = false;
+            is_camera_moving = false;
         }
         
         // Launch blurred images acquisition
@@ -175,11 +175,11 @@ public class ExtendedFlycam : MonoBehaviour
         
         // var sw = new Diagnostics.Stopwatch();
         // sw.Start();
-        var angle = 0;
+        var angle = 0.0f;
         var frameNumber = 1;
         for (float currentRotate = rotatePerUpdate; currentRotate <= 360.0f; currentRotate += rotatePerUpdate) 
         {
-            if(currentRotate > angle*1.0f)
+            if(currentRotate > angle)
             {
                 var pictureName = frameNumber.ToString("D2") + ".png";
                 // Debug.Log("Saving blurred " + pictureName);
@@ -224,7 +224,7 @@ public class ExtendedFlycam : MonoBehaviour
 
     IEnumerator MoveCamera() 
     {
-        is_corouting_running = true;
+        is_camera_moving = true;
         foreach (var cube in GameObject.FindGameObjectsWithTag("Zones"))
         {
             cube.GetComponent<Renderer>().enabled = false;
