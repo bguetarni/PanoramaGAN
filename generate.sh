@@ -11,8 +11,6 @@ else
 		if [ -e "data/$sample/blurred/out.jpg" ]
 		then
 			echo "$sample skipped"
-			echo "$sample skipped" >> log.txt
-			rm data/$sample/blurred/out.jpg
 		else
 			echo "$sample"
 			ls -d data/$sample/ground_truth/* | head -n "$nb" | xargs ./image-stitching
