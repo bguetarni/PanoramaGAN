@@ -160,7 +160,7 @@ public class ExtendedFlycam : MonoBehaviour
         // Launch dataset generation
         if (Input.GetKeyDown(KeyCode.D))
         {
-            StartCoroutine("DatasetGenerate", 5);
+            StartCoroutine("DatasetGenerate", 50);
         }
     }
 
@@ -170,8 +170,6 @@ public class ExtendedFlycam : MonoBehaviour
         initialPosition = transform.position;
         initialAngle = transform.eulerAngles;
         
-        // var sw = new Diagnostics.Stopwatch();
-        // sw.Start();
         var angle = 0.0f;
         var frameNumber = 1;
         for (float currentRotate = rotatePerUpdate; currentRotate <= 360.0f; currentRotate += rotatePerUpdate) 
@@ -179,7 +177,6 @@ public class ExtendedFlycam : MonoBehaviour
             if(currentRotate > angle)
             {
                 var pictureName = frameNumber.ToString("D2") + ".png";
-                // Debug.Log("Saving blurred " + pictureName);
                 RenderCurrentImage(path + "blurred/" + pictureName);
                 frameNumber++;
                 angle += angleBetweenFrame;
@@ -187,8 +184,6 @@ public class ExtendedFlycam : MonoBehaviour
             transform.Rotate(0, rotatePerUpdate, 0);
             yield return null;
         }
-        // sw.Stop();
-        // Debug.Log("Elapsed time for blurred images " + sw.Elapsed.ToString() + "s");
     }
 
     IEnumerator GenerateGroundTruth(string path)
@@ -209,7 +204,6 @@ public class ExtendedFlycam : MonoBehaviour
         for (int offset = angleBetweenFrame; offset <= 360; offset += angleBetweenFrame) 
         {
             var pictureName = frameNumber.ToString("D2") + ".png";
-            // Debug.Log("Saving ground-truth " + pictureName);
             RenderCurrentImage(path + "ground_truth/" + pictureName);
             frameNumber++;
             transform.eulerAngles = new Vector3(initialAngle.x, initialAngle.y + offset, initialAngle.z);
@@ -259,11 +253,11 @@ public class ExtendedFlycam : MonoBehaviour
         {
             cube.GetComponent<Renderer>().enabled = false;
         }
-        for(var i=0; i<nbSamples; i++)
+        for(var i=50; i<50+nbSamples; i++)
         {
-            // sample name in the form of: 00000XXX
-            var directoryName = (i+1).ToString("D" + nbSamples.ToString().Length.ToString()) + "/";
-            Debug.Log("sample n° " + directoryName);
+            // sample name in the form of: XXXX
+            var directoryName = (i+1).ToString("D4") + "/";
+            Debug.Log("sample n° " + (i+1));
             
             // create directory with the name of the sample if doesn't exist
             if(!Directory.Exists(datasetPath + directoryName))
