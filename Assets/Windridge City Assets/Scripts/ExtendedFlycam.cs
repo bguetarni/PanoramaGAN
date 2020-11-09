@@ -36,7 +36,7 @@ public class ExtendedFlycam : MonoBehaviour
 
     Vector3 initialAngle;
     Vector3 initialPosition;
-    const int angleBetweenFrame = 18;
+    const int angleBetweenFrame = 36;
     float rotatePerUpdate;
     bool is_camera_moving;
 
@@ -160,7 +160,7 @@ public class ExtendedFlycam : MonoBehaviour
         // Launch dataset generation
         if (Input.GetKeyDown(KeyCode.D))
         {
-            StartCoroutine("DatasetGenerate", 50);
+            StartCoroutine("DatasetGenerate");
         }
     }
 
@@ -172,7 +172,7 @@ public class ExtendedFlycam : MonoBehaviour
         
         var angle = 0.0f;
         var frameNumber = 1;
-        for (float currentRotate = rotatePerUpdate; currentRotate <= 360.0f; currentRotate += rotatePerUpdate) 
+        for (float currentRotate = 0; currentRotate <= 360.0f; currentRotate += rotatePerUpdate) 
         {
             if(currentRotate > angle)
             {
@@ -247,13 +247,13 @@ public class ExtendedFlycam : MonoBehaviour
         return p;
     }
 
-    IEnumerator DatasetGenerate(int nbSamples)
+    IEnumerator DatasetGenerate()
     {
         foreach (var cube in GameObject.FindGameObjectsWithTag("Zones"))
         {
             cube.GetComponent<Renderer>().enabled = false;
         }
-        for(var i=50; i<50+nbSamples; i++)
+        for(var i=1000; i<1050; i++)
         {
             // sample name in the form of: XXXX
             var directoryName = (i+1).ToString("D4") + "/";
