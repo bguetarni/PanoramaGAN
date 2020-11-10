@@ -36,7 +36,7 @@ public class ExtendedFlycam : MonoBehaviour
 
     Vector3 initialAngle;
     Vector3 initialPosition;
-    const int angleBetweenFrame = 36;
+    const int angleBetweenFrame = 21;
     float rotatePerUpdate;
     bool is_camera_moving;
 
@@ -47,10 +47,9 @@ public class ExtendedFlycam : MonoBehaviour
         GetComponent<Camera>().stereoSeparation = 0.064f; // Eye separation (IPD)
         picturesPath = Application.dataPath + "/../Pictures/";
         datasetPath = Application.dataPath + "/../data/";
-        rotatePerUpdate = Time.fixedDeltaTime * 360;
+        // rotatePerUpdate = Time.fixedDeltaTime * 360;
+        rotatePerUpdate = 7;
         Debug.Log("Rotate per update: " + rotatePerUpdate.ToString() + "°");
-        initialAngle = transform.rotation.eulerAngles;
-        initialPosition = transform.position;
     }
 
     void RenderCurrentImage(string filePath)
@@ -169,12 +168,12 @@ public class ExtendedFlycam : MonoBehaviour
         // save initial values for ground-truth
         initialPosition = transform.position;
         initialAngle = transform.eulerAngles;
-        
+
         var angle = 0.0f;
         var frameNumber = 1;
-        for (float currentRotate = 0; currentRotate <= 360.0f; currentRotate += rotatePerUpdate) 
+        for (float currentRotate = rotatePerUpdate; currentRotate < 360.0f; currentRotate += rotatePerUpdate) 
         {
-            if(currentRotate > angle)
+            if(currentRotate >= angle)
             {
                 var pictureName = frameNumber.ToString("D2") + ".png";
                 RenderCurrentImage(path + "blurred/" + pictureName);
@@ -201,10 +200,11 @@ public class ExtendedFlycam : MonoBehaviour
         transform.eulerAngles = initialAngle;
         
         var frameNumber = 1;
-        for (int offset = angleBetweenFrame; offset <= 360; offset += angleBetweenFrame) 
+        for (int offset = angleBetweenFrame; offset < 360.0f; offset += angleBetweenFrame) 
         {
             var pictureName = frameNumber.ToString("D2") + ".png";
             RenderCurrentImage(path + "ground_truth/" + pictureName);
+            yield return new WaitForSeconds(.1f);
             frameNumber++;
             transform.eulerAngles = new Vector3(initialAngle.x, initialAngle.y + offset, initialAngle.z);
             yield return null;
@@ -253,19 +253,15 @@ public class ExtendedFlycam : MonoBehaviour
         {
             cube.GetComponent<Renderer>().enabled = false;
         }
-        for(var i=1000; i<1050; i++)
+        for(var i=0; i<50; i++)
         {
             // sample name in the form of: XXXX
             var directoryName = (i+1).ToString("D4") + "/";
             Debug.Log("sample n° " + (i+1));
             
-            // create directory with the name of the sample if doesn't exist
-            if(!Directory.Exists(datasetPath + directoryName))
-            {
-                Directory.CreateDirectory(datasetPath + directoryName);
-                Directory.CreateDirectory(datasetPath + directoryName + "blurred/");
-                Directory.CreateDirectory(datasetPath + directoryName + "ground_truth/");
-            }
+            // create directoris for the sample if doesn't exist
+            Directory.CreateDirectory(datasetPath + directoryName + "blurred/");
+            Directory.CreateDirectory(datasetPath + directoryName + "ground_truth/");
 
             // new position and angle for camera
             transform.position = GetNewPosition();
