@@ -1,6 +1,11 @@
 #!/bin/bash
-echo "Enter number of images to consider"
-read nb
+if [ "$#" -eq 0 ]
+then
+	echo "Enter number of images to consider"
+	read nb
+else
+	nb="$1"
+fi
 if ! [[ "$nb" =~ ^[0-9]+$ ]]
 then
 	echo "Input passed not a number"

@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.PostProcessing;
+using UnityEditor;
 using System.Collections;
 using Diagnostics = System.Diagnostics;
 using System.IO;
@@ -43,13 +44,14 @@ public class ExtendedFlycam : MonoBehaviour
 
     void Start()
     {
-        Screen.lockCursor = true;
+        // Screen.lockCursor = true;
         GetComponent<Camera>().stereoSeparation = 0.064f; // Eye separation (IPD)
         picturesPath = Application.dataPath + "/../Pictures/";
         datasetPath = Application.dataPath + "/../data/";
         // rotatePerUpdate = Time.fixedDeltaTime * 360;
         rotatePerUpdate = 7;
         Debug.Log("Rotate per update: " + rotatePerUpdate.ToString() + "°");
+        Debug.Log("Angle between frames: " + angleBetweenFrame.ToString() + "°");
     }
 
     void RenderCurrentImage(string filePath)
@@ -253,7 +255,7 @@ public class ExtendedFlycam : MonoBehaviour
         {
             cube.GetComponent<Renderer>().enabled = false;
         }
-        for(var i=0; i<50; i++)
+        for(var i=250; i<300; i++)
         {
             // sample name in the form of: XXXX
             var directoryName = (i+1).ToString("D4") + "/";
@@ -272,5 +274,6 @@ public class ExtendedFlycam : MonoBehaviour
             yield return StartCoroutine("GenerateBlurredImages", datasetPath + directoryName);
             yield return StartCoroutine("GenerateGroundTruth", datasetPath + directoryName);
         }
+        UnityEditor.EditorApplication.isPlaying = false;
     }
 }
