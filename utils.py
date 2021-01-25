@@ -34,14 +34,15 @@ def get_statistics():
 
 
 def get_n_statistics():
-    images_path = 'data/'
+    images_path = '/data/panorama/outputs/'
     n = []
     for sample in os.listdir(images_path):
-        if os.path.isfile(images_path + sample + '/blurred/out.jpg'):
-            pano = cv2.imread(images_path + sample + '/blurred/out.jpg')
-            w, h = pano.shape[1], pano.shape[0]
-            nb_frames = (w/(h/96))/128
-            n.append(nb_frames)
+        pano = cv2.imread(images_path + sample)
+        w, h = pano.shape[1], pano.shape[0]
+        nb_frames = (w/(h/96))/128
+        if nb_frames < 1:
+            print(sample)
+        n.append(nb_frames)
     n = np.array(n)
     print('min : {}'.format(n.min()))
     print('max : {}'.format(n.max()))
@@ -52,10 +53,12 @@ def resize_and_fill_pano(x):
     h, w = x.shape[0], x.shape[1]
     w_resize = round(w/(h/96))
     x = cv2.resize(x, (w_resize, 96))
-    x = x/255
     out = np.ones((96, 6*128, 3))
     diff = 6*128 - x.shape[1]
     out[:, round(diff/2):x.shape[1] + round(diff/2), :] = x
+
+    # normalization
+    out = (out/255 - mean)/std
     return out
 
 
@@ -66,7 +69,9 @@ def create_dataset(path='/data/PanoramaGAN/panorama/'):
         if i % 100 == 0:
             print(i)
         x = None
-        for img_name in os.listdir(path + sample):
+        images_list = os.listdir(path + sample)
+        images_list.sort()
+        for img_name in images_list:
             if img_name != 'out.jpg':
                 img = cv2.imread(path + sample + '/' + img_name)
                 img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
@@ -74,26 +79,22 @@ def create_dataset(path='/data/PanoramaGAN/panorama/'):
 
                 # normalization
                 img = (img/255 - mean)/std
-                img = np.asarray(img, dtype='float32')
+                img = img.astype('float32')
 
                 if x is None:
                     x = img
                 else:
-                    x = np.concatenate((x, img), axis=0)
+                    x = np.concatenate((x, img), axis=-1)
             else:
                 img = cv2.imread(path + sample + '/' + img_name)
                 img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
-                # normalization
-                img = (img/255 - mean)/std
-
                 # reshape the pano to fit the 96*(6*128)
-                img = resize_and_fill_pano(img)
-                img = np.asarray(img, dtype='float32')
+                img = resize_and_fill_pano(img).astype('float32')
 
-                y = np.empty((3*6, 96, 128))
+                y = np.empty((96, 128, 3*6), dtype='float32')
                 for i in range(6):
-                    y[i*3:(i+1)*3] = img[:, :, 128*i:128*(i+1)]
+                    y[:, :, i*3:(i+1)*3] = img[:, 128*i:128*(i+1), :]
         x = np.expand_dims(x, axis=0)
         y = np.expand_dims(y, axis=0)
         if X is None:
@@ -103,7 +104,3 @@ def create_dataset(path='/data/PanoramaGAN/panorama/'):
             X = np.concatenate((X, x), axis=0)
             Y = np.concatenate((Y, y), axis=0)
     np.savez('dataset', X, Y)
-
-
-if __name__ == '__main__':
-    create_dataset()
