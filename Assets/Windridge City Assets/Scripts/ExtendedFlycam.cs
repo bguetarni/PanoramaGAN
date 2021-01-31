@@ -178,7 +178,7 @@ public class ExtendedFlycam : MonoBehaviour
             if(currentRotate >= angle)
             {
                 var pictureName = frameNumber.ToString("D2") + ".png";
-                RenderCurrentImage(path + "blurred/" + pictureName);
+                RenderCurrentImage(path + pictureName);
                 frameNumber++;
                 angle += angleBetweenFrame;
             }
@@ -205,7 +205,7 @@ public class ExtendedFlycam : MonoBehaviour
         for (int offset = angleBetweenFrame; offset < 360.0f; offset += angleBetweenFrame) 
         {
             var pictureName = frameNumber.ToString("D2") + ".png";
-            RenderCurrentImage(path + "ground_truth/" + pictureName);
+            RenderCurrentImage(path + pictureName);
             yield return new WaitForSeconds(.1f);
             frameNumber++;
             transform.eulerAngles = new Vector3(initialAngle.x, initialAngle.y + offset, initialAngle.z);
@@ -255,15 +255,15 @@ public class ExtendedFlycam : MonoBehaviour
         {
             cube.GetComponent<Renderer>().enabled = false;
         }
-        for(var i=250; i<300; i++)
+        for(var i=1650; i<1700; i++)
         {
             // sample name in the form of: XXXX
             var directoryName = (i+1).ToString("D4") + "/";
             Debug.Log("sample n° " + (i+1));
             
             // create directoris for the sample if doesn't exist
-            Directory.CreateDirectory(datasetPath + directoryName + "blurred/");
-            Directory.CreateDirectory(datasetPath + directoryName + "ground_truth/");
+            Directory.CreateDirectory(datasetPath + "blurred/" + directoryName);
+            Directory.CreateDirectory(datasetPath + "unblurred/" + directoryName);
 
             // new position and angle for camera
             transform.position = GetNewPosition();
@@ -271,8 +271,8 @@ public class ExtendedFlycam : MonoBehaviour
             yield return null;
             
             // render blurred, wait and render ground-truth
-            yield return StartCoroutine("GenerateBlurredImages", datasetPath + directoryName);
-            yield return StartCoroutine("GenerateGroundTruth", datasetPath + directoryName);
+            yield return StartCoroutine("GenerateBlurredImages", datasetPath + "blurred/" + directoryName);
+            yield return StartCoroutine("GenerateGroundTruth", datasetPath + "unblurred/" + directoryName);
         }
         UnityEditor.EditorApplication.isPlaying = false;
     }
